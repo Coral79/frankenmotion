@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="FrankenMotion: Part-level Human Motion Generation and Composition">
+  <meta property="og:title" content="FrankenMotion">
+  <link rel="icon" href="images/Frankenstein_icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FrankenMotion</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+  <link rel="stylesheet" href="./Files/bulma.min.css">
+  <link rel="stylesheet" href="./Files/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./Files/bulma-slider.min.css">
+  <link rel="stylesheet" href="./Files/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./Files/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./Files/fontawesome.all.min.js"></script>
+  <script src="./Files/bulma-carousel.min.js"></script>
+  <script src="./Files/bulma-slider.min.js"></script>
+  <script src="./Files/index.js"></script>
+
+  <style>
+    /* Comparison Grid Styling */
+    .video-column-ours {
+        background-color: #e8f5e9;
+        border: 4px solid #4CAF50;
+        border-radius: 8px;
+        padding: 8px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .video-column-base {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 8px;
+        height: 100%;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .caption-ours { color: #1b5e20; font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
+    .caption-base { font-weight: 600; color: #444; font-size: 1.2rem; margin-bottom: 5px; }
+    .caption-error { color: #d32f2f; font-size: 1rem; margin-top: 5px; font-weight: 500; font-style: italic; }
+
+    /* Ablation Text Styles */
+    .ablation-header-green { color: #2e7d32; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px; }
+    .ablation-header-orange { color: #e65100; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px; }
+    .ablation-header-grey { color: #616161; font-weight: 800; font-size: 1.2rem; margin-bottom: 8px; }
+    
+    /* Prompt Box */
+    .prompt-box {
+        background-color: #f5f5f5;
+        border-left: 5px solid #3273dc;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 4px;
+        font-family: 'Google Sans', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #333;
+    }
+
+    /* Carousel Item Spacing */
+    #dataset-carousel .item {
+      padding: 0 10px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  
+  <div class="container is-max-widescreen"> 
+    <div class="navbar-menu">
+      <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+        <a class="navbar-item is-size-5" href="#abstract">Abstract</a>
+        <a class="navbar-item is-size-5" href="#dataset">Dataset</a>
+        <a class="navbar-item is-size-5" href="#method">Method</a>
+        <a class="navbar-item is-size-5" href="#comparison">Comparisons</a>
+        <a class="navbar-item is-size-5" href="#ablation">Ablation</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<section class="hero" style="margin-top: 3rem;">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          
+          <h1 class="title is-1 publication-title" style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <img src="images/Frankenstein_icon.png" style="height: 1.8em; width: auto; margin-bottom: 5px;" alt="FrankenMotion Icon"/>
+            <span>FrankenMotion: Part-level Human Motion Generation and Composition</span>
+          </h1>
+          
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://coral79.github.io/">Chuqiao Li</a><sup>1,2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://xiexh20.github.io/">Xianghui Xie</a><sup>1,2,3</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://yongcaoplus.github.io/">Yong Cao</a><sup>1,2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://www.cvlibs.net/">Andreas Geiger</a><sup>1,2</sup>,
+            </span>
+            <span class="author-block">
+              <a href="https://virtualhumans.mpi-inf.mpg.de/people/pons-moll.html">Gerard Pons-Moll</a><sup>1,2,3</sup>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="margin-top: 10px; font-size: 0.9em;">
+            <span class="author-block"><sup>1</sup>University of Tübingen, </span>
+            <span class="author-block"><sup>2</sup>Tübingen AI Center,</span> <br>
+            <span class="author-block"><sup>3</sup>Max Planck Institute for Informatics, Saarland Informatics Campus</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/YOUR_USERNAME/YOUR_REPO" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#dataset" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-database"></i></span>
+                  <span>Data</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <div style="border: 2px solid #4CAF50; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+              <video id="teaser" autoplay muted loop playsinline width="100%">
+                <source src="video_results/04588_Ours.mp4" type="video/mp4">
+              </video>
+          </div>
+          <h2 class="subtitle has-text-centered" style="margin-top: 15px;">
+            FrankenMotion enables fine-grained control over individual body parts while maintaining global semantic coherence.
+          </h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="abstract">
+  <div class="container is-max-widescreen">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths has-text-centered">
+        <h2 class="title is-3">Abstract</h2>
+        
+        <div class="content has-text-centered is-size-5" style="font-weight: bold; color: #4a4a4a; margin-bottom: 1.5rem; background-color: #fefefe; border-radius: 8px; padding: 10px; border: 1px dashed #ccc;">
+          <span style="color: #4CAF50;">TL;DR:</span> We introduce the first framework for <strong>atomic, part-level motion control</strong>, powered by our new <strong>hierarchical Frankenstein dataset</strong> (39h) constructed via LLMs.
+        </div>
+
+        <div class="content has-text-justified is-size-5">
+          <p>
+            Human motion generation from text prompts has made remarkable progress in recent years. However, existing methods primarily rely on either sequence-level or action-level descriptions due to the absence of fine-grained, part-level motion annotations. This limits their controllability over individual body parts.
+          </p>
+          <p>
+            In this work, we construct a high-quality motion dataset with atomic, temporally-aware part-level text annotations, leveraging the reasoning capabilities of large language models (LLMs). Unlike prior datasets that either provide synchronized part captions with fixed time segments or rely solely on global sequence labels, our dataset captures asynchronous and semantically distinct part movements at fine temporal resolution.
+          </p>
+          <p>
+            Based on this dataset, we introduce a diffusion-based part-aware motion generation framework, namely <strong>FrankenMotion</strong>, where each body part is guided by its own temporally-structured textual prompt. This is, to our knowledge, the first work to provide atomic, temporally-aware part-level motion annotations and have a model that allows motion generation with both spatial (body part) and temporal (atomic action) control.
+          </p>
+          <p>
+            Experiments demonstrate that FrankenMotion outperforms all previous baseline models adapted and retrained for our setting, and our model can compose motions unseen during training.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="dataset" style="background-color: #fcfcfc;">
+  <div class="container is-max-widescreen">
+    
+    <h2 class="title is-3 has-text-centered" style="margin-bottom: 2rem;">
+        🖼️ Frankenstein Gallery: The <span style="color: #4CAF50;">Frankenstein</span> Dataset
+    </h2>
+
+    <p class="subtitle is-5 has-text-centered" style="margin-bottom: 3rem; color: #333; max-width: 1400px; margin: 0 auto 4rem auto;">
+        Our work introduces the <strong>Frankenstein Dataset</strong>, the largest dataset providing 
+        <strong>hierarchical, temporally-aware annotations</strong> for 3D human motion. 
+        Generated automatically using our <strong>FrankenAgent</strong>, this dataset features 
+        <strong>high-quality, diverse motion annotations</strong>.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 20px; max-width: 1400px; margin: 0 auto 3rem auto;">
+        <div style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; text-align: center;">
+            <p style="font-weight: bold; color: #333;">Sequence-Level</p>
+            <p style="font-size: 0.9em; color: #666;">Top Text (Global)</p>
+        </div>
+        <div style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; text-align: center;">
+            <p style="font-weight: bold; color: #209cee;">Action-Level</p>
+            <p style="font-size: 0.9em; color: #666;">Bottom Bar (Segments)</p>
+        </div>
+        <div style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; text-align: center;">
+            <p style="font-weight: bold; color: #ff3860;">Part-Level</p>
+            <p style="font-size: 0.9em; color: #666;">Colored Body Parts</p>
+        </div>
+    </div>
+
+    <div id="dataset-carousel" class="carousel results-carousel">
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/CMU_122_122_64_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/MPI_HDM05_bk_HDM_bk_05-02_02_120_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/KIT_969_Trial_57_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/BioMotionLab_NTroje_rub037_0020_lifting_heavy2_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/BioMotionLab_NTroje_rub007_0009_knocking2_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/BioMotionLab_NTroje_rub055_0017_lifting_light1_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/KIT_205_step_over_gap10_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/ACCAD_Male2MartialArtsKicks_c3d_G2 - Sidekick leading left_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/CMU_108_108_18_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/KIT_348_walking_fast07_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/BMLmovi_Subject_61_F_MoSh_Subject_61_F_12_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="item">
+        <video autoplay controls muted loop playsinline width="100%" style="border-radius: 8px; border: 1px solid #ddd;">
+          <source src="dataset_gallery/Frankenstein/KIT_572_dance_waltz12_poses.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="section" id="method" style="background-color: #fff;">
+  <div class="container is-max-widescreen">
+    <h2 class="title is-3 has-text-centered">Method Overview</h2>
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <img src="images/Method.png" alt="FrankenMotion Architecture" style="width:100%;"> 
+        <div class="content has-text-justified" style="margin-top: 15px;">
+          <p>
+            Our model is a transformer-based diffusion model that can be input conditioned on a) sequence level prompt, 
+            b) action-level prompt and c) part-level prompt. After training with our paired data of motion and structured 
+            multi-granularity text annotations, it learns the essential motion elements and how to compose them into complex motions.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="comparison" style="background-color: #f5f5f5;">
+  <div class="container is-max-widescreen">
+    <h2 class="title is-3 has-text-centered">👑 Qualitative Comparison</h2>
+    
+    <div class="content has-text-centered box" style="background-color: #fff; border-left: 4px solid #4CAF50; margin-bottom: 2rem;">
+      <p class="is-size-5">
+        To the best of our knowledge, no prior method is able to accomplish this complex task of hierarchical control. 
+        For fair comparison, we adapted state-of-the-art methods (<strong>UniMotion</strong>, <strong>DART</strong>, and <strong>STMC</strong>) 
+        to include part control and retrained them on our Frankenstein dataset.
+      </p>
+    </div>
+
+    <div id="comparison-carousel" class="carousel results-carousel">
+      
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+          "A person walking, turning around, sitting down on a chair, standing up, and walking again."
+        </div>
+        <div class="columns is-multiline is-centered">
+          <div class="column is-6">
+            <div class="video-column-ours">
+              <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+              <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                <source src="video_results/04588_Ours.mp4" type="video/mp4">
+              </video>
+            </div>
+          </div>
+          <div class="column is-6">
+            <div class="video-column-base">
+              <p class="has-text-centered caption-base">UniMotion</p>
+              <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                <source src="video_results/04588_Unimotion.mp4" type="video/mp4">
+              </video>
+              <p class="has-text-centered caption-error">Missing turn before sitting.</p>
+            </div>
+          </div>
+          <div class="column is-6">
+            <div class="video-column-base">
+              <p class="has-text-centered caption-base">DartControl</p>
+              <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                <source src="video_results/04588_DART.mp4" type="video/mp4">
+              </video>
+              <p class="has-text-centered caption-error">Temporal misalignment.</p>
+            </div>
+          </div>
+          <div class="column is-6">
+            <div class="video-column-base">
+              <p class="has-text-centered caption-base">STMC</p>
+              <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                <source src="video_results/04588_STMC.mp4" type="video/mp4">
+              </video>
+              <p class="has-text-centered caption-error">Ignores trajectory (walking in place).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person throws a fishing line with the right hand, pushing forward and then pulling back."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01491_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01491_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">No pulling back after throwing.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01491_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Repeats throwing motion.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01491_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Wrong arm used.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person pivots slightly and then throws an object with their right arm."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/02601_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/02601_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">No pivot; leg stays.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/02601_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Repeats throw.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/02601_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Wrong leg movement.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person turns around to the right and continues to walk in a u shape."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/05184_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/05184_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">S-shape instead of U.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/05184_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">No U-shaped path.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/05184_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Incorrect walking style.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person walking with support down the path and around obstacles."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/06912_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/06912_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Normal walking instead of support.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/06912_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Unnatural movement.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/06912_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Ignores obstacles.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person moves to sit down and then stands up."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/00997_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/00997_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Never sits down.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/00997_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Repeats sitting.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/00997_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">No moving before sitting.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="prompt-box has-text-centered">
+           "A person stands in place, crosses arms in front of chest, then drops them back to sides."
+        </div>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-6">
+              <div class="video-column-ours">
+                <p class="has-text-centered caption-ours">🏆 FrankenMotion (Ours)</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01891_Ours.mp4" type="video/mp4">
+                </video>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">UniMotion</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01891_Unimotion.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Arm crossing under chest.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">DartControl</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01891_DART.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Arm not put down.</p>
+              </div>
+            </div>
+            <div class="column is-6">
+              <div class="video-column-base">
+                <p class="has-text-centered caption-base">STMC</p>
+                <video autoplay muted loop playsinline width="100%" style="border-radius: 6px;">
+                  <source src="video_results/01891_STMC.mp4" type="video/mp4">
+                </video>
+                <p class="has-text-centered caption-error">Arm crossing under chest.</p>
+              </div>
+            </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<section class="section" id="ablation" style="background-color: #fff;">
+  <div class="container is-fullhd"> 
+    
+    <h2 class="title is-3 has-text-centered" style="margin-bottom: 3rem;">🧪 Ablation Studies: The Value of Hierarchical Control</h2>
+
+    <p class="subtitle is-5 has-text-centered" style="margin-bottom: 3rem; color: #333; max-width: 1400px; margin: 0 auto 4rem auto;">
+      These ablations highlight the importance of our hierarchical conditioning. Notice how motion quality degrades as conditioning layers are removed.
+    </p>
+
+    <div id="ablation-carousel" class="carousel results-carousel">
+        
+        <div class="item">
+            <div class="prompt-box has-text-centered">
+                "A person throws an object with the right hand and then pulls an item towards the body with both hands."
+            </div>
+            <div class="columns is-centered is-variable is-1">
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-green">Part + Action + Sequence (Full)</p>
+                    <div style="border: 3px solid #4CAF50; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00656_Seq+Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px;">Natural throw & pull</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-orange">Part + Action (No Sequence)</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00656_Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">No pull back</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-grey">Part Only</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00656_Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">Unnatural motion</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="item">
+            <div class="prompt-box has-text-centered">
+                "A person does three jumping jacks."
+            </div>
+            <div class="columns is-centered is-variable is-1">
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-green">Part + Action + Sequence (Full)</p>
+                    <div style="border: 3px solid #4CAF50; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/01046_Seq+Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px;">Correct and natural</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-orange">Part + Action (No Sequence)</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/01046_Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">Incorrect count; turning to the right</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-grey">Part Only</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/01046_Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">Not natural jumping jacks</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="item">
+            <div class="prompt-box has-text-centered">
+                "A person praying with hands clasped together."
+            </div>
+            <div class="columns is-centered is-variable is-1">
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-green">Part + Action + Sequence (Full)</p>
+                    <div style="border: 3px solid #4CAF50; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00728_Seq+Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px;">Clasped hands & bowed</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-orange">Part + Action (No Sequence)</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00728_Action+Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">Does not resemble praying</p>
+                </div>
+                <div class="column is-4 has-text-centered">
+                    <p class="ablation-header-grey">Part Only</p>
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0;">
+                        <video autoplay muted loop playsinline width="100%" style="display: block;">
+                            <source src="ablations/00728_Part.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <p class="is-size-6" style="margin-top: 8px; font-style: italic; color: #d32f2f;">Crosses arms</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{frankenmotion2026,
+  title={FrankenMotion: Part-level Human Motion Generation and Composition},
+  author={Li, Chuqiao and Xie, Xianghui and Cao, Yong and Geiger, Andreas and Pons-Moll, Gerard},
+  journal={arxiv},
+  year={2026}
+}</code></pre>
+  </div>
+</section>
+
+<script>
+  $(document).ready(function() {
+    
+    // Dataset Carousel: Shows 2 items at a time
+    bulmaCarousel.attach('#dataset-carousel', {
+      slidesToScroll: 1,
+      slidesToShow: 2, 
+      pagination: false,
+      loop: true,
+      infinite: true,
+      autoplay: true,
+      autoplaySpeed: 5000,
+      navigation: true,
+    });
+
+    // Comparison Carousel: Shows 1 item (which is a 2x2 grid)
+    bulmaCarousel.attach('#comparison-carousel', {
+      slidesToScroll: 1,
+      slidesToShow: 1,
+      pagination: true,
+      loop: true,
+      infinite: true,
+      autoplay: false,
+      navigation: true,
+    });
+
+    // Ablation Carousel
+    bulmaCarousel.attach('#ablation-carousel', {
+      slidesToScroll: 1,
+      slidesToShow: 1,
+      pagination: true,
+      loop: true,
+      infinite: true,
+      autoplay: false,
+      navigation: true,
+    });
+  });
+</script>
+
+</body>
+</html>
